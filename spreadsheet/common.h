@@ -13,6 +13,14 @@ struct Position {
     int row = 0;
     int col = 0;
 
+    struct Hash {
+		size_t operator()(const Position& pos) const {
+			return hasher_(pos.row) * 37 + hasher_(pos.col) * 37 * 37;
+		}
+	private:
+		std::hash<int> hasher_;
+	};
+
     bool operator==(Position rhs) const;
     bool operator<(Position rhs) const;
 
@@ -39,16 +47,33 @@ public:
     enum class Category {
         Ref,    // ссылка на ячейку с некорректной позицией
         Value,  // ячейка не может быть трактована как число
-        Div0,  // в результате вычисления возникло деление на ноль
+        Arithmetic,  // в результате вычисления возникло деление на ноль
     };
 
-    FormulaError(Category category);
+    FormulaError(Category category) 
+        : category_(category) {
+    }
 
-    Category GetCategory() const;
+    Category GetCategory() const {
+        return category_;
+    }
 
-    bool operator==(FormulaError rhs) const;
+    bool operator==(FormulaError rhs) const {
+        return category_ == rhs.category_;
+    }
 
-    std::string_view ToString() const;
+    std::string_view ToString() const {
+        switch (category_) {
+        case Category::Ref:
+            return "#REF!";
+        case Category::Value:
+            return "#VALUE!";
+        case Category::Arithmetic:
+            return "#ARITHM!";
+        default:
+            return "";
+        }
+    }
 
 private:
     Category category_;
